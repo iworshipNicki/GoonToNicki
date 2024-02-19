@@ -7,7 +7,8 @@ A tiny slideshow utilty that can be used for any type of content that you like.
 1. Right click the link below and click "save as".
 2. Save it somewhere.
 3. Find it in your files and double-click it to open it in a browser.
-4. (Tested in Firefox, might work in other browsers)
+4. Hit F11 for fullscreen.
+5. (Tested in Firefox, might work in other browsers)
 
 [https://raw.githubusercontent.com/GoonItUpNow/slideItUpNow/main/index.html](https://raw.githubusercontent.com/GoonItUpNow/slideItUpNow/main/index.html)
 
