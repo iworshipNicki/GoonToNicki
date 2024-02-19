@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script type="module">
+            import { showDirectoryPicker } from 'https://cdn.jsdelivr.net/npm/file-system-access/lib/es2018.js';
+
+            let videoSplittingTime = 60;
+            let allFiles = [];
+            let inProgress = false;
+            let volume = 1.0;
+
+            async function openDir2() {
+                try {
+                    const folder = await showDirectoryPicker()
+                    await loadFiles(folder)
+                    inProgress = true
+                    for (const e of document.getElementsByClassName("slideshow")) {
+                        await startSlideShow(e)
+                    }
+                } catch(e) {
+                    console.log(e)
+                }
+            }
+
+            async function loadFiles(folder) {
+                allFiles = []
+                let videoFiles = []
+                await loadFolder(folder, videoFiles)
+                const {shortVideos, longVideos} = await loadVideoMetadata(videoFiles)
+                allFiles = allFiles.concat(shortVideos)
+                allFiles = allFiles.concat(longVideos)
+                shuffle(allFiles)
+                console.log(allFiles)
+            }
+
+            async function loadFolder(folder, videoFiles) {
+                let files = await folder.values()
+                for await (const file of files) {
+                    if (file.kind == 'directory') {
+                        await loadFolder(file, videoFiles)
+                    } else if (/\.(jpg|jpeg|png|gif|bmp|webp|svg|tiff)$/i.test(file.name)) {
+                        allFiles.push({type: 'short', file: file, format: 'image'})
+                    } else if (/\.(mp4|webm|ogg|mov|avi|mkv|flv|wmv|3gp)$/i.test(file.name)) {
+                        videoFiles.push(file)
+                    }
+                }
+            }
+
+            async function loadVideoMetadata(videoFiles) {
+                if (videoFiles.length == 0) {
+                    return {shortVideos: [], longVideos: []}
+                }
+                const longVideos = []
+                const shortVideos = []
+                document.getElementById("vidTotal").innerText = videoFiles.length + ""
+                const cur = document.getElementById("vidCurrent")
+                const video = document.createElement('video');
+                video.preload = 'metadata';
+                let loaded = 0
+
+                return new Promise(async(resolve) => {
+
+                    video.onloadedmetadata = async function() {
+                        window.URL.revokeObjectURL(video.src);
+                        var duration = video.duration;
+                        if (duration > videoSplittingTime) {
+                            const video = videoFiles.pop()
+                            for (let i = 0; i < Math.ceil(duration/videoSplittingTime); i++) {
+                                longVideos.push({type: 'long', file: video, start: i*videoSplittingTime, format: 'video'})
+                            }
+                        } else {
+                            shortVideos.push({type: 'short', file: videoFiles.pop(), format: 'video'})
+                        }
+                        cur.innerText = ++loaded
+                        if (videoFiles.length > 0) {
+                            video.src = URL.createObjectURL(await videoFiles[videoFiles.length - 1].getFile())
+                        } else {
+                            resolve({shortVideos, longVideos})
+                        }
+                    }
+
+                    video.src = URL.createObjectURL(await videoFiles[videoFiles.length - 1].getFile());
+                })
+            }
+
+            async function startSlideShow(root) {
+                let videoPlayer = root.querySelector(".videoSlide")
+                let imgViewer = root.querySelector(".imgSlide")
+                let timeout = null
+                let prevObjects = []
+                
+                document.getElementById("welcome").style.display = 'none';
+                document.getElementById("slideshow-grid").style.display = 'flex';
+                for(const elem of document.getElementsByClassName("slideshow-row")) {
+                    elem.style.display = 'flex';
+                }
+                for(const elem of document.getElementsByClassName("slideshow")) {
+                    elem.style.display = 'block';
+                }
+
+                async function nextSlide() {
+                    console.log(allFiles)
+                    if (!root.isConnected) {
+                        console.log("removed")
+                        return
+                    }
+                    console.log(root)
+                    let file = allFiles.pop()
+                    console.log(file)
+                    if (file.format === 'video') {
+                        timeout = null
+                        videoPlayer.src = URL.createObjectURL(await file.file.getFile())
+                        prevObjects.push(videoPlayer.src)
+                        videoPlayer.play()
+                        videoPlayer.style.display = 'block';
+                        imgViewer.style.display = 'none';
+                        if (file.type === 'long') {
+                            videoPlayer.currentTime = file.start
+                            timeout = setTimeout(() => nextSlide(), videoSplittingTime*1000)
+                        }
+                    } else {
+                        videoPlayer.pause()
+                        imgViewer.src = URL.createObjectURL(await file.file.getFile())
+                        prevObjects.push(imgViewer.src)
+                        videoPlayer.style.display = 'none';
+                        imgViewer.style.display = 'block';
+                        timeout = setTimeout(() => nextSlide(), 20000)
+                    }
+                    if (prevObjects.length > 2) {
+                        URL.revokeObjectURL(prevObjects.shift())
+                    }
+                }
+
+                videoPlayer.addEventListener("ended", nextSlide, false)
+
+                nextSlide()
+
+                root.onclick = () => {
+                    if (timeout) {
+                        clearTimeout(timeout)
+                    }
+                    nextSlide()
+                }
+            }
+
+            function shuffle(array) {
+                let currentIndex = array.length,  randomIndex;
+
+                // While there remain elements to shuffle.
+                while (currentIndex > 0) {
+
+                    // Pick a remaining element.
+                    randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex--;
+
+                    // And swap it with the current element.
+                    [array[currentIndex], array[randomIndex]] = [
+                    array[randomIndex], array[currentIndex]];
+                }
+
+                return array;
+            }
+
+            let settingsBarHeight = 0;
+            let draggingVolume = false;
+            let volumeSlider = null;
+            let volumeControl = null;
+            let volumeControlOpen = false;
+
+            function volumeHold() {
+                draggingVolume = true;
+            }
+
+            function volumeRelease() {
+                if (draggingVolume) {
+                    let url = new URL(window.location.href)
+                    url.searchParams.set('volume', volume)
+                    window.history.pushState({path:url.href}, '', url.href)
+                }
+                draggingVolume = false;
+            }
+
+            function volumeDrag(event) {
+                if (draggingVolume) {
+                    let y = event.clientY - settingsBarHeight
+                    if (y < 16) {
+                        y = 16
+                    }
+                    if (y > (150 - 16)) {
+                        y = 150 - 16
+                    }
+                    volumeSlider.setAttribute('cy', y)
+                    volume = 1 - (y - 16)/(150 - 32)
+                    console.log(volume)
+                    for (let e of document.getElementsByClassName("videoSlide")) {
+                        e.volume = volume
+                    }
+                }
+            }
+
+            function setVolumeOnSlider() {
+                volume = new URLSearchParams(window.location.search).get("volume")
+                console.log(volume)
+                let y = (1 - volume)*(150-32) + 16
+                volumeSlider.setAttribute('cy', y)
+            }
+
+            function toggleVolume() {
+                volumeControlOpen = !volumeControlOpen
+                volumeControl.style.display = volumeControlOpen ? 'block' : 'none';
+            }
+
+            let horizontalSlides = 1
+            let verticalSlides = 1
+            let slideshowGrid;
+
+            async function changeGrid() {
+                while (slideshowGrid.children.length > verticalSlides) {
+                    slideshowGrid.removeChild(slideshowGrid.children[slideshowGrid.children.length - 1])
+                }
+                while (slideshowGrid.children[0].children.length > horizontalSlides) {
+                    for (let i = 0; i < slideshowGrid.children.length; i++) {
+                        let removeFrom = slideshowGrid.children[i].children
+                        slideshowGrid.children[i].removeChild(removeFrom[removeFrom.length - 1])
+                    }
+                }
+                while (slideshowGrid.children[0].children.length < horizontalSlides) {
+                    for (let i = 0; i < slideshowGrid.children.length; i++) {
+                        let ssDiv = document.createElement("div")
+                        ssDiv.className = "slideshow"
+                        let imgDiv = document.createElement("img")
+                        imgDiv.className = "imgSlide"
+                        let vidDiv = document.createElement("video")
+                        vidDiv.className = "videoSlide"
+                        vidDiv.setAttribute("controls", "true")
+                        vidDiv.volume = volume
+                        ssDiv.append(imgDiv)
+                        ssDiv.append(vidDiv)
+                        slideshowGrid.children[i].append(ssDiv)
+                        if (inProgress) {
+                            startSlideShow(ssDiv)
+                        }
+                    }
+                }
+                while (slideshowGrid.children.length < verticalSlides) {
+                    slideshowGrid.append(slideshowGrid.children[0].cloneNode(true))
+                    if (inProgress) {
+                        for (let child of slideshowGrid.children[slideshowGrid.children.length - 1].children) {
+                            startSlideShow(child)
+                        }
+                    }
+                }
+                let rowHeight = 100/verticalSlides
+                for (let child of document.getElementsByClassName("slideshow-row")) {
+                    child.style.height = rowHeight + "%"
+                }
+            }
+
+            function getSplitValue(event) {
+                let value = event.target.value
+                if (value < 1) {
+                    value = 1
+                    event.target.value = 1
+                }
+                return value
+            }
+
+            function setHorizontalSplits(event) {
+                horizontalSlides = getSplitValue(event)
+                changeGrid()
+            }
+
+            function setVerticalSplits(event) {
+                verticalSlides = getSplitValue(event)
+                changeGrid()
+            }
+
+            window.onload = () => {
+                settingsBarHeight = document.getElementById("bar").offsetHeight
+                document.getElementById("browse").onclick = openDir2
+                volumeSlider = document.getElementById("volumeSlider")
+                volumeSlider.onmousedown = volumeHold
+                document.onmouseup = volumeRelease
+                document.onmousemove = volumeDrag
+                slideshowGrid = document.getElementById("slideshow-grid")
+                document.getElementById("horizontalSplits").onchange = setHorizontalSplits
+                document.getElementById("verticalSplits").onchange = setVerticalSplits
+                volumeControl = document.getElementById("volumeControl")
+                document.getElementById("volume").onclick = toggleVolume
+                document.getElementById("settings").onclick = (event) => { document.getElementById("settingsDialog").style.display = 'block' }
+                document.getElementById("settingsClose").onclick = (event) => { document.getElementById("settingsDialog").style.display = 'none' }
+                setVolumeOnSlider()
+            }
+
+        </script>
+        <style>
+
+            html, body {
+                width: 100%;
+                height: 100%;
+                padding: 0;
+                margin: 0;
+            }
+
+            body {
+                background-color: pink; 
+            }
+
+            #slideshow-grid {
+                width: 100%;
+                height: 100%;
+                display: none;
+                float: left;
+                position: absolute;
+                z-index: 1;
+                flex-direction: column;
+            }
+
+            .slideshow-row {
+                width: 100%;
+                height: 100%;
+                display: none;
+            }
+
+            .slideshow {
+                width: 100%;
+                height: 100%;
+                display: none;
+            }
+
+            .imgSlide {
+                max-width: 100%;
+                max-height: 100%;
+                position: relative;
+                margin: auto;
+                top: 50%;
+                -ms-transform: translateY(-50%);
+                transform: translateY(-50%);
+            }
+
+            #welcome {
+                float: left;
+            }
+
+            .videoSlide {
+                max-width: 100%;
+                max-height: 100%;
+                margin: 0 auto;
+                position: relative;
+                top: 50%;
+                -ms-transform: translateY(-50%);
+                transform: translateY(-50%);
+            }
+            #menu {
+                float: right;
+                color: lightgray;
+            }
+            #bar {
+                background-color: rgba(0, 0, 0, 0.5);
+                padding: 0 5px 5px 5px;
+                position: relative;
+                z-index: 2;
+            }
+            #volumeControl {
+                width: 40px;
+                height: 150px;
+                background-color: rgba(0, 0, 0, 0.5);
+                float: right;
+                position: relative;
+                z-index: 2;
+                display: none;
+            }
+            a {
+                color: lightgray;
+            }
+            #settingsDialog {
+                width: 400px;
+                margin: 0;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: lightgray;
+                border: 1px solid black;
+                border-radius: 5px;
+                padding: 20px;
+                z-index: 3;
+                display: none;
+            }
+            #settingsClose {
+                float: right;
+                z-index: 4;
+                position: relative;
+            }
+            #settingsClose a {
+                color: black;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="menu">
+            <div id="bar">
+                <a href="#" id="settings">settings</a> | <a href="#" id="volume">volume</a>
+            </div>
+            <div id="volumeControl">
+                <svg width="40" height="150">
+                    <rect width="6" height="130" x="17" y = "10" stroke="lightgray" fill="lightgray"/>
+                    <circle cx="20" cy="16" r="12" stroke="black" fill="white" id="volumeSlider"/>
+                </svg>
+            </div>
+        </div>
+        <div id="settingsDialog">
+            <div id="settingsClose"><a href="#">[x]</a></div>
+            horizontalSplits: <input type="number" value="1" id="horizontalSplits"/><br />
+            verticalSplits: <input type="number" value="1" id="verticalSplits"/><br />
+        </div>
+        <div id="welcome">
+            <p>Welcome to GoonItUpNow's slideshow - Shitty look but great performance. Click button below to pick directory.</p>
+            <button id="browse">Pick folder</button>
+            <p>Loading video metadata <span id="vidCurrent">0</span>/<span id="vidTotal">0</span></p>
+        </div>
+        <div id="slideshow-grid">
+            <div class="slideshow-row">
+                <div class="slideshow">
+                    <img class="imgSlide"/>
+                    <video class="videoSlide" autoplay controls></video>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
