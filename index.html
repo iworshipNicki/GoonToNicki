@@ -4,7 +4,9 @@
         <script type="module">
             import { showDirectoryPicker } from 'https://cdn.jsdelivr.net/npm/file-system-access/lib/es2018.js';
 
-            let videoSplittingTime = 60;
+            let params = new URLSearchParams(window.location.search)
+            let videoSplittingTime = params.has("videoSplitLength") ? parseInt(params.get("videoSplitLength")) : 60;
+            let imageInterval = 20;
             let allFiles = [];
             let inProgress = false;
             let volume = 1.0;
@@ -99,14 +101,11 @@
                 }
 
                 async function nextSlide() {
-                    console.log(allFiles)
                     if (!root.isConnected) {
                         console.log("removed")
                         return
                     }
-                    console.log(root)
                     let file = allFiles.pop()
-                    console.log(file)
                     if (file.format === 'video') {
                         timeout = null
                         videoPlayer.src = URL.createObjectURL(await file.file.getFile())
@@ -124,7 +123,7 @@
                         prevObjects.push(imgViewer.src)
                         videoPlayer.style.display = 'none';
                         imgViewer.style.display = 'block';
-                        timeout = setTimeout(() => nextSlide(), 20000)
+                        timeout = setTimeout(() => nextSlide(), imageInterval*1000)
                     }
                     if (prevObjects.length > 2) {
                         URL.revokeObjectURL(prevObjects.shift())
@@ -244,22 +243,22 @@
                 }
             }
 
-            function getSplitValue(event) {
-                let value = event.target.value
+            function getPositiveValue(target) {
+                let value = target.value
                 if (value < 1) {
                     value = 1
-                    event.target.value = 1
+                    target.value = 1
                 }
                 return value
             }
 
             function setHorizontalSplits(event) {
-                horizontalSlides = getSplitValue(event)
+                horizontalSlides = getPositiveValue(event.target)
                 changeGrid()
             }
 
             function setVerticalSplits(event) {
-                verticalSlides = getSplitValue(event)
+                verticalSlides = getPositiveValue(event.target)
                 changeGrid()
             }
 
@@ -290,6 +289,15 @@
                 document.body.style.backgroundImage = ""
             }
 
+            function setImageInterval(event) {
+                imageInterval = getPositiveValue(event.target)
+            }
+
+            function applySettings() {
+                let splitIime = getPositiveValue(document.getElementById("videoSplitLength"))
+                window.location.search = "videoSplitLength=" + splitIime
+            }
+
             window.onload = () => {
                 settingsBarHeight = document.getElementById("bar").offsetHeight
                 document.getElementById("browse").onclick = openDir2
@@ -300,6 +308,7 @@
                 slideshowGrid = document.getElementById("slideshow-grid")
                 document.getElementById("horizontalSplits").onchange = setHorizontalSplits
                 document.getElementById("verticalSplits").onchange = setVerticalSplits
+                document.getElementById("nextImageSec").onchange = setImageInterval
                 volumeControl = document.getElementById("volumeControl")
                 document.getElementById("volume").onclick = toggleVolume
                 document.getElementById("settings").onclick = (event) => { document.getElementById("settingsDialog").style.display = 'block' }
@@ -309,6 +318,8 @@
                 document.getElementById("clearBackgroundImage").onclick = clearBgImage
                 document.getElementById("fill").onclick = (event) => { document.body.style.backgroundSize = "cover" }
                 document.getElementById("fit").onclick = (event) => { document.body.style.backgroundSize = "contain" }
+                document.getElementById("videoSplitLength").value = videoSplittingTime
+                document.getElementById("settingsApply").onclick = applySettings
             }
 
         </script>
@@ -414,9 +425,24 @@
                 float: right;
                 z-index: 4;
                 position: relative;
+                top: -10px;
             }
             #settingsClose a {
                 color: black;
+            }
+            .settingsRow {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                padding-bottom: 5px;
+            }
+            .settingsRow.sub {
+                margin-left: 20px;
+                display: block;
+            }
+            .settingsRow.sub span:first-of-type {
+                width: 50px;
+                display: inline-block;
             }
         </style>
     </head>
@@ -434,14 +460,20 @@
         </div>
         <div id="settingsDialog">
             <div id="settingsClose"><a href="#">[x]</a></div>
-            Horizontal Splits: <input type="number" value="1" id="horizontalSplits" autocomplete="off"/><br />
-            Vertical Splits: <input type="number" value="1" id="verticalSplits" autocomplete="off"/><br />
-            Background color (RGB, #ffc0cb): <input type="text" value="#ffc0cb" id="backgroundColor" title="RGB color in format #ffffff" autocomplete="off"/><br />
-            Background image: <br/>
-            &nbsp;&nbsp;&nbsp;&nbsp;Image: <input type="file" accept=".png,.svg,.jpg,.gif,.webp" id="backgroundImage" autocomplete="off" /><br/>
-            &nbsp;&nbsp;&nbsp;&nbsp;Mode: <input type="radio" id="fit" name="imageMode" autocomplete="off" /><label for="fit"> fit</label> 
-            <input type="radio" id="fill" name="imageMode" checked autocomplete="off" /><label for="fill"> fill</label><br />
-            &nbsp;&nbsp;&nbsp;&nbsp;Clear: <button type="button" id="clearBackgroundImage">Clear</button>
+            <h3>Instant settings</h3>
+            <div class="settingsRow"><span>Horizontal Splits</span><input type="number" value="1" id="horizontalSplits" autocomplete="off"/></div>
+            <div class="settingsRow"><span>Vertical Splits</span><input type="number" value="1" id="verticalSplits" autocomplete="off"/></div>
+            <div class="settingsRow"><span>Next image (seconds)</span><input type="number" value="20" id="nextImageSec" autocomplete="off"/></div>
+            <div class="settingsRow"><span>Background color (RGB, #ffc0cb)</span><input type="text" value="#ffc0cb" id="backgroundColor" title="RGB color in format #ffffff" autocomplete="off"/></div>
+            <div class="settingsRow"><span>Background image</span></div>
+            <div class="settingsRow sub"><span>Image</span><input type="file" accept=".png,.svg,.jpg,.gif,.webp" id="backgroundImage" autocomplete="off" /></div>
+            <div class="settingsRow sub"><span>Mode</span><span><input type="radio" id="fit" name="imageMode" autocomplete="off" /><label for="fit"> fit</label> 
+            <input type="radio" id="fill" name="imageMode" checked autocomplete="off" /><label for="fill"> fill</label></span></div>
+            <div class="settingsRow sub"><span>Clear</span><button type="button" id="clearBackgroundImage">Clear</button></div>
+            <h3>Settings that require refresh</h3>
+            <div class="settingsRow"><span>Video split length (seconds)</span><input type="number" value="60" id="videoSplitLength" autocomplete="off"/></div>
+            <button id="settingsApply">Apply and refresh</button>
+
         </div>
         <div id="welcome">
             <p>Welcome to GoonItUpNow's slideshow - Shitty look but great performance.</p>
