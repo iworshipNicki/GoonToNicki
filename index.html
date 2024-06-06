@@ -172,11 +172,6 @@
             }
 
             function volumeRelease() {
-                if (draggingVolume) {
-                    let url = new URL(window.location.href)
-                    url.searchParams.set('volume', volume)
-                    window.history.pushState({path:url.href}, '', url.href)
-                }
                 draggingVolume = false;
             }
 
@@ -196,13 +191,6 @@
                         e.volume = volume
                     }
                 }
-            }
-
-            function setVolumeOnSlider() {
-                volume = new URLSearchParams(window.location.search).get("volume")
-                console.log(volume)
-                let y = (1 - volume)*(150-32) + 16
-                volumeSlider.setAttribute('cy', y)
             }
 
             function toggleVolume() {
@@ -316,7 +304,6 @@
                 document.getElementById("volume").onclick = toggleVolume
                 document.getElementById("settings").onclick = (event) => { document.getElementById("settingsDialog").style.display = 'block' }
                 document.getElementById("settingsClose").onclick = (event) => { document.getElementById("settingsDialog").style.display = 'none' }
-                setVolumeOnSlider()
                 document.getElementById("backgroundColor").oninput = bgColorChanged
                 document.getElementById("backgroundImage").onchange = bgImageChanged
                 document.getElementById("clearBackgroundImage").onclick = clearBgImage
@@ -375,6 +362,7 @@
 
             #welcome {
                 float: left;
+                margin-left: 10px;
             }
 
             .videoSlide {
@@ -456,7 +444,9 @@
             &nbsp;&nbsp;&nbsp;&nbsp;Clear: <button type="button" id="clearBackgroundImage">Clear</button>
         </div>
         <div id="welcome">
-            <p>Welcome to GoonItUpNow's slideshow - Shitty look but great performance. Click button below to pick directory.</p>
+            <p>Welcome to GoonItUpNow's slideshow - Shitty look but great performance.</p>
+            <p>Click button below to pick directory. Click settings to increase number of tiles. F11 for fullscreen mode.</p>
+            <p>No data is actually uploaded, everything is processed locally on your computer.</p>
             <button id="browse">Pick folder</button>
             <p>Loading video metadata <span id="vidCurrent">0</span>/<span id="vidTotal">0</span></p>
         </div>
