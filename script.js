@@ -1,11 +1,8 @@
 import { showDirectoryPicker } from 'https://cdn.jsdelivr.net/npm/file-system-access/lib/es2018.js';
+import { initSettings, settings } from './settings.js';
 
-let params = new URLSearchParams(window.location.search)
-let videoSplittingTime = params.has("videoSplitLength") ? parseInt(params.get("videoSplitLength")) : 60;
-let imageInterval = 20;
 let allFiles = [];
 let inProgress = false;
-let volume = 1.0;
 
 async function openDir2() {
     try {
@@ -61,10 +58,10 @@ async function loadVideoMetadata(videoFiles) {
         video.onloadedmetadata = async function() {
             window.URL.revokeObjectURL(video.src);
             var duration = video.duration;
-            if (duration > videoSplittingTime) {
+            if (duration > settings.videoSplittingTime) {
                 const video = videoFiles.pop()
-                for (let i = 0; i < Math.ceil(duration/videoSplittingTime); i++) {
-                    longVideos.push({type: 'long', file: video, start: i*videoSplittingTime, format: 'video'})
+                for (let i = 0; i < Math.ceil(duration/settings.videoSplittingTime); i++) {
+                    longVideos.push({type: 'long', file: video, start: i*settings.videoSplittingTime, format: 'video'})
                 }
             } else {
                 shortVideos.push({type: 'short', file: videoFiles.pop(), format: 'video'})
@@ -107,11 +104,12 @@ async function startSlideShow(root) {
             videoPlayer.src = URL.createObjectURL(await file.file.getFile())
             prevObjects.push(videoPlayer.src)
             videoPlayer.play()
+            videoPlayer.volume = settings.volume
             videoPlayer.style.display = 'block';
             imgViewer.style.display = 'none';
             if (file.type === 'long') {
                 videoPlayer.currentTime = file.start
-                timeout = setTimeout(() => nextSlide(), videoSplittingTime*1000)
+                timeout = setTimeout(() => nextSlide(), settings.videoSplittingTime*1000)
             }
         } else {
             videoPlayer.pause()
@@ -119,7 +117,7 @@ async function startSlideShow(root) {
             prevObjects.push(imgViewer.src)
             videoPlayer.style.display = 'none';
             imgViewer.style.display = 'block';
-            timeout = setTimeout(() => nextSlide(), imageInterval*1000)
+            timeout = setTimeout(() => nextSlide(), settings.imageInterval*1000)
         }
         if (prevObjects.length > 2) {
             URL.revokeObjectURL(prevObjects.shift())
@@ -156,58 +154,19 @@ function shuffle(array) {
     return array;
 }
 
-let settingsBarHeight = 0;
-let draggingVolume = false;
-let volumeSlider = null;
-let volumeControl = null;
-let volumeControlOpen = false;
-
-function volumeHold() {
-    draggingVolume = true;
-}
-
-function volumeRelease() {
-    draggingVolume = false;
-}
-
-function volumeDrag(event) {
-    if (draggingVolume) {
-        let y = event.clientY - settingsBarHeight
-        if (y < 16) {
-            y = 16
-        }
-        if (y > (150 - 16)) {
-            y = 150 - 16
-        }
-        volumeSlider.setAttribute('cy', y)
-        volume = 1 - (y - 16)/(150 - 32)
-        console.log(volume)
-        for (let e of document.getElementsByClassName("videoSlide")) {
-            e.volume = volume
-        }
-    }
-}
-
-function toggleVolume() {
-    volumeControlOpen = !volumeControlOpen
-    volumeControl.style.display = volumeControlOpen ? 'block' : 'none';
-}
-
-let horizontalSlides = 1
-let verticalSlides = 1
 let slideshowGrid;
 
 async function changeGrid() {
-    while (slideshowGrid.children.length > verticalSlides) {
+    while (slideshowGrid.children.length > settings.verticalSlides) {
         slideshowGrid.removeChild(slideshowGrid.children[slideshowGrid.children.length - 1])
     }
-    while (slideshowGrid.children[0].children.length > horizontalSlides) {
+    while (slideshowGrid.children[0].children.length > settings.horizontalSlides) {
         for (let i = 0; i < slideshowGrid.children.length; i++) {
             let removeFrom = slideshowGrid.children[i].children
             slideshowGrid.children[i].removeChild(removeFrom[removeFrom.length - 1])
         }
     }
-    while (slideshowGrid.children[0].children.length < horizontalSlides) {
+    while (slideshowGrid.children[0].children.length < settings.horizontalSlides) {
         for (let i = 0; i < slideshowGrid.children.length; i++) {
             let ssDiv = document.createElement("div")
             ssDiv.className = "slideshow"
@@ -216,7 +175,7 @@ async function changeGrid() {
             let vidDiv = document.createElement("video")
             vidDiv.className = "videoSlide"
             vidDiv.setAttribute("controls", "true")
-            vidDiv.volume = volume
+            vidDiv.volume = settings.volume
             ssDiv.append(imgDiv)
             ssDiv.append(vidDiv)
             slideshowGrid.children[i].append(ssDiv)
@@ -225,7 +184,7 @@ async function changeGrid() {
             }
         }
     }
-    while (slideshowGrid.children.length < verticalSlides) {
+    while (slideshowGrid.children.length < settings.verticalSlides) {
         slideshowGrid.append(slideshowGrid.children[0].cloneNode(true))
         if (inProgress) {
             for (let child of slideshowGrid.children[slideshowGrid.children.length - 1].children) {
@@ -233,87 +192,14 @@ async function changeGrid() {
             }
         }
     }
-    let rowHeight = 100/verticalSlides
+    let rowHeight = 100/settings.verticalSlides
     for (let child of document.getElementsByClassName("slideshow-row")) {
         child.style.height = rowHeight + "%"
     }
 }
 
-function getPositiveValue(target) {
-    let value = target.value
-    if (value < 1) {
-        value = 1
-        target.value = 1
-    }
-    return value
-}
-
-function setHorizontalSplits(event) {
-    horizontalSlides = getPositiveValue(event.target)
-    changeGrid()
-}
-
-function setVerticalSplits(event) {
-    verticalSlides = getPositiveValue(event.target)
-    changeGrid()
-}
-
-function bgColorChanged(event) {
-    let color = event.target.value.trim()
-    if (/^#[0-9a-f]{6}$/i.test(color)) {
-        document.body.style.backgroundColor = color
-    }
-}
-
-async function bgImageChanged(event) {
-    var files = !!this.files ? this.files : [];
-
-    // If no files were selected, or no FileReader support, return
-    if ( !files.length || !window.FileReader ) return;
-
-    if ( /^image/.test( files[0].type ) ) {
-        var reader = new FileReader();
-        reader.readAsDataURL( files[0] );
-        reader.onloadend = function() {
-            document.body.style.backgroundImage = "url(" + this.result + ")";
-        }
-
-    }
-}
-
-function clearBgImage() {
-    document.body.style.backgroundImage = ""
-}
-
-function setImageInterval(event) {
-    imageInterval = getPositiveValue(event.target)
-}
-
-function applySettings() {
-    let splitIime = getPositiveValue(document.getElementById("videoSplitLength"))
-    window.location.search = "videoSplitLength=" + splitIime
-}
-
 window.onload = () => {
-    settingsBarHeight = document.getElementById("bar").offsetHeight
     document.getElementById("browse").onclick = openDir2
-    volumeSlider = document.getElementById("volumeSlider")
-    volumeSlider.onmousedown = volumeHold
-    document.onmouseup = volumeRelease
-    document.onmousemove = volumeDrag
     slideshowGrid = document.getElementById("slideshow-grid")
-    document.getElementById("horizontalSplits").onchange = setHorizontalSplits
-    document.getElementById("verticalSplits").onchange = setVerticalSplits
-    document.getElementById("nextImageSec").onchange = setImageInterval
-    volumeControl = document.getElementById("volumeControl")
-    document.getElementById("volume").onclick = toggleVolume
-    document.getElementById("settings").onclick = (event) => { document.getElementById("settingsDialog").style.display = 'block' }
-    document.getElementById("settingsClose").onclick = (event) => { document.getElementById("settingsDialog").style.display = 'none' }
-    document.getElementById("backgroundColor").oninput = bgColorChanged
-    document.getElementById("backgroundImage").onchange = bgImageChanged
-    document.getElementById("clearBackgroundImage").onclick = clearBgImage
-    document.getElementById("fill").onclick = (event) => { document.body.style.backgroundSize = "cover" }
-    document.getElementById("fit").onclick = (event) => { document.body.style.backgroundSize = "contain" }
-    document.getElementById("videoSplitLength").value = videoSplittingTime
-    document.getElementById("settingsApply").onclick = applySettings
+    initSettings(changeGrid)
 }
