@@ -90,7 +90,7 @@ async function startSlideShow(root) {
         elem.style.display = 'flex';
     }
     for(const elem of document.getElementsByClassName("slideshow")) {
-        elem.style.display = 'block';
+        elem.style.display = 'flex';
     }
 
     async function nextSlide() {
