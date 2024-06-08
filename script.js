@@ -116,7 +116,7 @@ async function startSlideShow(root) {
             imgViewer.src = URL.createObjectURL(await file.file.getFile())
             prevObjects.push(imgViewer.src)
             videoPlayer.style.display = 'none';
-            imgViewer.style.display = 'block';
+            imgViewer.style.display = 'inline-block';
             timeout = setTimeout(() => nextSlide(), settings.imageInterval*1000)
         }
         if (prevObjects.length > 2) {
