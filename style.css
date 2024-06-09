@@ -10,6 +10,7 @@ body {
     background-repeat: no-repeat;
     background-size: cover;
     background-position: center;
+    font-family: 'Brush Script MT', cursive;
 }
 
 #slideshow-grid {
@@ -40,7 +41,66 @@ body {
 
 #welcome {
     float: left;
-    margin-left: 10px;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+    align-items: center;
+}
+
+#welcomeArea {
+    text-align: center;
+}
+
+#welcomeArea svg {
+    width: 75px;
+}
+
+#welcomeArea svg path {
+    transition: d 0.5s linear;
+}
+
+#ahegao-left {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 480px;
+}
+
+#ahegao-right {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 400px;
+}
+
+#load-container {
+    position: relative;
+    display: none;
+}
+
+#load-left {
+    position: absolute;
+    width: 300px;
+    left: 270px;
+    top: -50px;
+}
+
+#load-right {
+    position: absolute;
+    width: 200px;
+    left: 500px;
+    top: 40px;
+}
+
+#bucket {
+    display: none;
+}
+
+#browse {
+    padding: 7px;
+    font-family: inherit;
+    font-size: 25px;
 }
 
 .videoSlide {
@@ -49,8 +109,9 @@ body {
     height: 100%;
 }
 #menu {
-    float: right;
     color: lightgray;
+    position: absolute;
+    right: 0;
 }
 #bar {
     background-color: rgba(0, 0, 0, 0.5);
@@ -71,7 +132,7 @@ a {
     color: lightgray;
 }
 #settingsDialog {
-    width: 400px;
+    width: 500px;
     margin: 0;
     position: absolute;
     top: 50%;

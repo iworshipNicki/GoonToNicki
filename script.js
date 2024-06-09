@@ -4,9 +4,34 @@ import { initSettings, settings } from './settings.js';
 let allFiles = [];
 let inProgress = false;
 
+function animateBucket() {
+    let path = document.getElementById("path")
+    let paths = [
+        'm0,20 v150 C0 180 90 180 90 170 v-150 C80 40 0 40 0 20 z',
+        'm0,40 v130 C0 180 90 180 90 170 v-170 C60 0 30 40 0 40 z',
+        'm0,20 v150 C0 180 90 180 90 170 v-150 C80 0 0 0 0 20 z',
+        'm0,0 v170 C0 180 90 180 90 170 v-130 C60 40 30 0 0 0 z'
+    ]
+    let i = 0
+    path.ontransitionend = () => {
+        console.log("hello", paths[i % 4])
+        setTimeout(() => path.setAttribute('d', paths[i++ % 4]), 1)
+    }
+    path.ontransitioncancel = () => {
+        console.log('bla')
+    }
+    path.setAttribute('d', paths[i++])
+}
+
 async function openDir2() {
     try {
         const folder = await showDirectoryPicker()
+        for (const e of document.getElementsByClassName("titleContent")) {
+            e.style.opacity = '0'
+        }
+        document.getElementById("load-container").style.display = 'block'
+        document.getElementById("bucket").style.display = 'inline-block'
+        setTimeout(() => animateBucket(), 10)
         await loadFiles(folder)
         inProgress = true
         for (const e of document.getElementsByClassName("slideshow-row")) {
@@ -47,8 +72,6 @@ async function loadVideoMetadata(videoFiles) {
     }
     const longVideos = []
     const shortVideos = []
-    document.getElementById("vidTotal").innerText = videoFiles.length + ""
-    const cur = document.getElementById("vidCurrent")
     const video = document.createElement('video');
     video.preload = 'metadata';
     let loaded = 0
@@ -72,7 +95,6 @@ async function loadVideoMetadata(videoFiles) {
             } else {
                 shortVideos.push({type: 'short', file: videoFiles.pop(), format: 'video', width: width, height: height})
             }
-            cur.innerText = ++loaded
             if (videoFiles.length > 0) {
                 video.src = URL.createObjectURL(await videoFiles[videoFiles.length - 1].getFile())
             } else {

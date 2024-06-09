@@ -33,11 +33,23 @@
 
         </div>
         <div id="welcome">
-            <p>Welcome to GoonItUpNow's slideshow - Shitty look but great performance.</p>
-            <p>Click button below to pick directory. Click settings to increase number of tiles. F11 for fullscreen mode.</p>
-            <p>No data is actually uploaded, everything is processed locally on your computer.</p>
-            <button id="browse">Pick folder</button>
-            <p>Loading video metadata <span id="vidCurrent">0</span>/<span id="vidTotal">0</span></p>
+            <img id="ahegao-left" src="resources/ahegao left.png"/>
+            <img id="ahegao-right" src="resources/ahegao right.png"/>
+            <div id="welcomeArea">
+                <div id="load-container">
+                    <img src="resources/load left.png" id="load-left"/>
+                    <img src="resources/load right.png" id="load-right"/>
+                </div>
+                <img class="titleContent" src="resources/title.png"/><br/>
+                <button class="titleContent" id="browse">Pick folder</button><br/>
+                <svg viewBox="0 0 90 200" xmlns="http://www.w3.org/2000/svg" id="bucket">
+                    <path id="path" fill="#ffffff" stroke="#aaaaaa" d="
+                        m0,0 v170 C0 180 90 180 90 167 v-130 C60 40 30 0 0 0 z
+                    "></path>
+                    <path fill-opacity="0" stroke="#aaaaaa" stroke-width="3" d="m0,0 v170 m90,0 v-170 z"></path>
+                    <path fill-opacity="0" stroke="#aaaaaa" stroke-width="2" d="m0,170 C0 180 90 180 90 170"></path>
+                </svg>
+            </div>
         </div>
         <div id="slideshow-grid">
             <div class="slideshow-row">
