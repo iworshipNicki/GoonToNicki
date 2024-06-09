@@ -1,13 +1,14 @@
 let defaultSettings = {
     imageInterval: 20,
-    horizontalSlides: 1,
-    verticalSlides: 1,
+    rows: 2,
     volume: 1.0,
     videoSplittingTime: 60,
     bgColor: "ffc0cb"
 }
 
-export const settings = localStorage.getItem("settings") != null ? {...defaultSettings, ...JSON.parse(localStorage.getItem("settings"))} : defaultSettings;
+const storedSettings = localStorage.getItem("settings")
+
+export const settings = storedSettings != null ? {...defaultSettings, ...JSON.parse(storedSettings)} : defaultSettings;
 
 export function saveSettings() {
     localStorage.setItem("settings", JSON.stringify(settings))
@@ -68,14 +69,8 @@ function getPositiveValue(target) {
     return value
 }
 
-function setHorizontalSplits(event) {
-    settings.horizontalSlides = getPositiveValue(event.target)
-    saveSettings()
-    gridChanged()
-}
-
-function setVerticalSplits(event) {
-    settings.verticalSlides = getPositiveValue(event.target)
+function setRows(event) {
+    settings.rows = getPositiveValue(event.target)
     saveSettings()
     gridChanged()
 }
@@ -135,11 +130,8 @@ export function initSettings(onGridChanged) {
     document.getElementById("settings").onclick = (event) => { document.getElementById("settingsDialog").style.display = 'block' }
     document.getElementById("settingsClose").onclick = (event) => { document.getElementById("settingsDialog").style.display = 'none' }
 
-    document.getElementById("horizontalSplits").value = settings.horizontalSlides
-    document.getElementById("horizontalSplits").onchange = setHorizontalSplits
-
-    document.getElementById("verticalSplits").value = settings.verticalSlides
-    document.getElementById("verticalSplits").onchange = setVerticalSplits
+    document.getElementById("rows").value = settings.rows
+    document.getElementById("rows").onchange = setRows
     onGridChanged()
 
     document.getElementById("nextImageSec").value = settings.imageInterval
