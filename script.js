@@ -14,11 +14,7 @@ function animateBucket() {
     ]
     let i = 0
     path.ontransitionend = () => {
-        console.log("hello", paths[i % 4])
         setTimeout(() => path.setAttribute('d', paths[i++ % 4]), 1)
-    }
-    path.ontransitioncancel = () => {
-        console.log('bla')
     }
     path.setAttribute('d', paths[i++])
 }
@@ -157,6 +153,7 @@ async function getNextSlides(remainingWidth, height) {
     let indicesToRemove = [];
     for (let i = allFiles.length - 1; i >= allFiles.length - 10 && i >= 0; i--) {
         let scaledWidth = scaleWidth(height, allFiles[i].height, allFiles[i].width)
+        allFiles[i].scaledWidth = scaledWidth
         if (scaledWidth < newRemainingWidth) {
             toAdd.push(allFiles[i])
             indicesToRemove.push(i)
@@ -174,13 +171,22 @@ function jitter(num) {
     return num + amount
 }
 
-function replaceSlide(parent, newElem, oldElem){
+function replaceSlide(parent, newElem, oldElem, newWidth){
+    let oldWidth;
     if (oldElem && Array.prototype.indexOf.call(parent.children, oldElem) >= 0) {
+        oldWidth = oldElem.offsetWidth
+        newElem.style.width = oldWidth
         parent.replaceChild(newElem, oldElem)
         URL.revokeObjectURL(oldElem.src)
     } else {
+        oldWidth = 0
         parent.appendChild(newElem)
     }
+    newElem.setAttribute("data-real-width", newWidth)
+    newElem.animate([
+        { width: oldWidth + "px" },
+        { width: newWidth + "px" }
+    ], 500)
 }
 
 async function startSlideShow(root) {
@@ -200,7 +206,7 @@ async function startSlideShow(root) {
         }
         let childrenWidth = 0;
         for (const child of root.children) {
-            childrenWidth += child.offsetWidth
+            childrenWidth += parseInt(child.dataset.realWidth)
         }
         let slides = await getNextSlides(root.offsetWidth - (childrenWidth - removedWidth), root.offsetHeight)
         for (const slide of slides) {
@@ -210,7 +216,7 @@ async function startSlideShow(root) {
                 vidDiv.setAttribute("controls", "true")
                 vidDiv.volume = settings.volume
                 vidDiv.src = URL.createObjectURL(await slide.file.getFile())
-                replaceSlide(root, vidDiv, toRemove.pop())
+                replaceSlide(root, vidDiv, toRemove.pop(), slide.scaledWidth)
                 vidDiv.play()
                 let timeout; 
                 if (slide.type === 'long') {
@@ -233,7 +239,7 @@ async function startSlideShow(root) {
                 let imgDiv = document.createElement("img")
                 imgDiv.className = "imgSlide"
                 imgDiv.src = URL.createObjectURL(await slide.file.getFile())
-                replaceSlide(root, imgDiv, toRemove.pop())
+                replaceSlide(root, imgDiv, toRemove.pop(), slide.scaledWidth)
                 const timeout = setTimeout(() => nextSlide(imgDiv), jitter(settings.imageInterval*1000))
                 imgDiv.onclick = () => {
                     clearTimeout(timeout)
@@ -243,8 +249,14 @@ async function startSlideShow(root) {
         }
         for(const e of toRemove) {
             if (Array.prototype.indexOf.call(root.children, e) >= 0) {
-                root.removeChild(e)
-                URL.revokeObjectURL(e.src)
+                const animation = e.animate([
+                    { width: e.offsetWidth + "px" },
+                    { width: 0 + "px" }
+                ], 500)
+                animation.onfinish = function() {
+                    this.effect.target.parentNode.removeChild(this.effect.target);
+                    URL.revokeObjectURL(this.effect.target.src)
+                }
             }
         }
         toRemove = []
@@ -252,7 +264,6 @@ async function startSlideShow(root) {
 
     async function nextSlide(elemRemoved) {
         if (!root.isConnected) {
-            console.log("removed")
             return
         }
         if (elemRemoved) {
