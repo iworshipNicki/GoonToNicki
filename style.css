@@ -56,10 +56,6 @@ body {
     width: 75px;
 }
 
-#welcomeArea svg path {
-    transition: d 0.5s linear;
-}
-
 #ahegao-left {
     position: absolute;
     left: 0;

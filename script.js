@@ -3,20 +3,26 @@ import { initSettings, settings } from './settings.js';
 
 let allFiles = [];
 let inProgress = false;
+let current = 0;
+let total = 100;
+let animationInterval;
 
 function animateBucket() {
     let path = document.getElementById("path")
-    let paths = [
-        'm0,20 v150 C0 180 90 180 90 170 v-150 C80 40 0 40 0 20 z',
-        'm0,40 v130 C0 180 90 180 90 170 v-170 C60 0 30 40 0 40 z',
-        'm0,20 v150 C0 180 90 180 90 170 v-150 C80 0 0 0 0 20 z',
-        'm0,0 v170 C0 180 90 180 90 170 v-130 C60 40 30 0 0 0 z'
-    ]
-    let i = 0
-    path.ontransitionend = () => {
-        setTimeout(() => path.setAttribute('d', paths[i++ % 4]), 1)
-    }
-    path.setAttribute('d', paths[i++])
+    let time = 0.0
+    animationInterval = setInterval(() => {
+        time += 0.1
+        let height = (current/total)*140 + 30
+        let startY = 200 - height
+        let startHeight = startY + Math.sin(time)*20
+        let leftDistToBottom = 170 - startHeight
+        let endHeight = startY + Math.cos(time)*20
+        let rightDistToTop = 170 - endHeight
+        let y1 = Math.sin(time*2 + 3*Math.PI/4)*30 + startY
+        let y2 = Math.sin(time*2 + Math.PI/4)*30 + startY
+        path.setAttribute('d', 'm0,' + startHeight + ' v' + leftDistToBottom + ' C0 180 90 180 90 170 v-' + rightDistToTop + ' C60 ' + y1 + ' 30 ' + y2 + ' 0 ' + startHeight + ' z')
+    }, 33)
+    
 }
 
 async function openDir2() {
@@ -27,11 +33,14 @@ async function openDir2() {
         }
         document.getElementById("load-container").style.display = 'block'
         document.getElementById("bucket").style.display = 'inline-block'
-        setTimeout(() => animateBucket(), 10)
+        animateBucket()
         await loadFiles(folder)
         inProgress = true
         for (const e of document.getElementsByClassName("slideshow-row")) {
             await startSlideShow(e)
+        }
+        if (animationInterval) {
+            clearInterval(animationInterval)
         }
     } catch(e) {
         console.log(e)
@@ -70,7 +79,8 @@ async function loadVideoMetadata(videoFiles) {
     const shortVideos = []
     const video = document.createElement('video');
     video.preload = 'metadata';
-    let loaded = 0
+    total = videoFiles.length
+    current = 0
 
     return new Promise(async(resolve) => {
 
@@ -93,6 +103,7 @@ async function loadVideoMetadata(videoFiles) {
             }
             if (videoFiles.length > 0) {
                 video.src = URL.createObjectURL(await videoFiles[videoFiles.length - 1].getFile())
+                current++;
             } else {
                 resolve({shortVideos, longVideos})
             }
