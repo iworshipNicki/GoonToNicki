@@ -28,10 +28,9 @@ async function openDir2() {
     try {
         const folder = await showDirectoryPicker()
         for (const e of document.getElementsByClassName("titleContent")) {
-            e.style.opacity = '0'
+            e.style.display = 'none'
         }
         document.getElementById("load-container").style.display = 'block'
-        document.getElementById("bucket").style.display = 'inline-block'
         animateBucket()
         await loadFiles(folder)
         inProgress = true

@@ -54,6 +54,7 @@ body {
 
 #welcomeArea svg {
     width: 75px;
+    margin-top: 250px;
 }
 
 #ahegao-left {
@@ -78,19 +79,15 @@ body {
 #load-left {
     position: absolute;
     width: 300px;
-    left: 270px;
-    top: -50px;
+    left: -190px;
+    top: -70px;
 }
 
 #load-right {
     position: absolute;
     width: 200px;
-    left: 500px;
+    left: 45px;
     top: 40px;
-}
-
-#bucket {
-    display: none;
 }
 
 #browse {
