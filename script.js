@@ -22,7 +22,6 @@ function animateBucket() {
         let y2 = Math.sin(time*2 + Math.PI/4)*30 + startY
         path.setAttribute('d', 'm0,' + startHeight + ' v' + leftDistToBottom + ' C0 180 90 180 90 170 v-' + rightDistToTop + ' C60 ' + y1 + ' 30 ' + y2 + ' 0 ' + startHeight + ' z')
     }, 33)
-    
 }
 
 async function openDir2() {
@@ -89,8 +88,8 @@ async function loadVideoMetadata(videoFiles) {
             let duration = video.duration;
             let width = video.videoWidth;
             let height = video.videoHeight;
-            if (!width || !height) { // assume 16:9 ratio
-                width = 16
+            if (!width || !height) { // assume 19:9 ratio
+                width = 19
                 height = 9
             }
             if (duration > settings.videoSplittingTime) {
@@ -314,18 +313,19 @@ async function changeGrid() {
     while (slideshowGrid.children.length > settings.rows) {
         slideshowGrid.removeChild(slideshowGrid.children[slideshowGrid.children.length - 1])
     }
-    while (slideshowGrid.children.length < settings.rows) {
-        let ssRow = document.createElement("div")
-        ssRow.className = "slideshow-row"
-        ssRow.style.display = "flex"
-        slideshowGrid.append(ssRow)
-        if (inProgress) {
-            startSlideShow(slideshowGrid.children[slideshowGrid.children.length - 1])
-        }
-    }
     let rowHeight = 100/settings.rows
     for (let child of document.getElementsByClassName("slideshow-row")) {
         child.style.height = rowHeight + "%"
+    }
+    for (let i = slideshowGrid.children.length; i < settings.rows; i++) {
+        let ssRow = document.createElement("div")
+        ssRow.className = "slideshow-row"
+        ssRow.style.display = "flex"
+        ssRow.style.height = rowHeight + "%"
+        slideshowGrid.append(ssRow)
+        if (inProgress) {
+            setTimeout(() => startSlideShow(slideshowGrid.children[slideshowGrid.children.length - 1]), 100)
+        }
     }
 }
 
