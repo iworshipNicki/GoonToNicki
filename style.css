@@ -106,6 +106,7 @@ body {
     right: 0;
     width: 300px;
     height: 200px;
+    z-index: 3;
 }
 #menu {
     color: lightgray;
