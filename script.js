@@ -31,6 +31,7 @@ async function openDir2() {
             e.style.display = 'none'
         }
         document.getElementById("load-container").style.display = 'block'
+        document.getElementById("menu-tip").style.display = 'none'
         animateBucket()
         await loadFiles(folder)
         inProgress = true

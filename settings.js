@@ -20,7 +20,7 @@ let settingsBarHeight = 0;
 let draggingVolume = false;
 let volumeSlider = null;
 let volumeControl = null;
-let volumeControlOpen = false;
+let volumeControlOpen = true;
 
 function volumeHold() {
     draggingVolume = true;
@@ -148,4 +148,7 @@ export function initSettings(onGridChanged) {
 
     document.getElementById("videoSplitLength").value = settings.videoSplittingTime
     document.getElementById("settingsApply").onclick = applySettings
+
+    document.getElementById("menu-hover").onmouseenter = () => { document.getElementById("menu").style.display = "block" }
+    document.getElementById("menu-hover").onmouseleave = () => { document.getElementById("menu").style.display = "none" }
 }

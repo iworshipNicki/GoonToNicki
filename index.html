@@ -5,15 +5,21 @@
         <link href="style.css" rel="stylesheet"></style>
     </head>
     <body>
-        <div id="menu">
-            <div id="bar">
-                <a href="#" id="settings">settings</a> | <a href="#" id="volume">volume</a>
+        <div id="menu-hover">
+            <div id="menu" style="display: none;">
+                <div id="bar">
+                    <a href="#" id="settings">settings</a> | <a href="#" id="volume">volume</a>
+                </div>
+                <div id="volumeControl">
+                    <svg width="40" height="150">
+                        <rect width="6" height="130" x="17" y = "10" stroke="lightgray" fill="lightgray"/>
+                        <circle cx="20" cy="16" r="12" stroke="black" fill="white" id="volumeSlider"/>
+                    </svg>
+                </div>
             </div>
-            <div id="volumeControl">
-                <svg width="40" height="150">
-                    <rect width="6" height="130" x="17" y = "10" stroke="lightgray" fill="lightgray"/>
-                    <circle cx="20" cy="16" r="12" stroke="black" fill="white" id="volumeSlider"/>
-                </svg>
+            <div id="menu-tip">
+                <div>Menu</div>
+                <div><img src="resources/arrow.webp" width="100"/></div>
             </div>
         </div>
         <div id="settingsDialog">
