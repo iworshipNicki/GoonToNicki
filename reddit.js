@@ -107,7 +107,7 @@ export async function nextRedditSlides(remainingWidth, height) {
             newRemainingWidth -= scaledWidth
         }
     }
-    for (const i of indicesToRemove) {
+    for (const i of indicesToRemove.reverse()) {
         redditFiles.splice(i, 1)
     }
     if (redditFiles.length < 10) {
