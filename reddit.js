@@ -4,7 +4,7 @@ let after;
 let baseUrl;
 
 export async function startReddit() {
-    addSubreddit()
+    addSubreddit();
     let subreddits = [];
     for (const redditElem of document.getElementsByClassName("pickedSubreddit")) {
         subreddits.push(redditElem.innerText.trim())
@@ -12,11 +12,14 @@ export async function startReddit() {
     if (subreddits.length == 0) {
         return false;
     }
+    const sort = document.getElementById("redditSort").value;
+    const time = document.getElementById("redditTime").value
     baseUrl = "https://www.reddit.com/r/"
     baseUrl += subreddits.join("+") + "/"
-    baseUrl += document.getElementById("redditSort").value + "/"
+    baseUrl += sort + "/"
     baseUrl += ".json"
-    baseUrl += "?t=" + document.getElementById("redditTime").value
+    baseUrl += "?t=" + time
+    saveProfile(subreddits, sort, time);
     await loadNextPage()
     return true
 }
@@ -116,24 +119,85 @@ export async function nextRedditSlides(remainingWidth, height) {
 let subredditInput;
 let pickedSubreddits;
 let redditTimeContainer;
+let profileTextInput;
+let profilePicker;
 
 function addSubreddit() {
     const val = subredditInput.value
     if (val.trim() != "") {
-        const divElem = document.createElement("div");
-        divElem.innerHTML = '<span class="pickedSubreddit">' + val + "</span> <button>Remove</button>";
-        divElem.getElementsByTagName("button")[0].onclick = function() { pickedSubreddits.removeChild(divElem) }
-        pickedSubreddits.appendChild(divElem)
+        addSubredditValue(val)
         subredditInput.value = ""
     }
 }
 
-function changeSort(event) {
-    const val = event.target.value
+function addSubredditValue(subredditName) {
+    const divElem = document.createElement("div");
+    divElem.innerHTML = '<span class="pickedSubreddit">' + subredditName + "</span> <button>Remove</button>";
+    divElem.getElementsByTagName("button")[0].onclick = function() { pickedSubreddits.removeChild(divElem) }
+    pickedSubreddits.appendChild(divElem)
+}
+
+function changeSort() {
+    const val = document.getElementById("redditSort").value
     if (val == "top" || val == "controversial") {
         redditTimeContainer.style.display = "flex"
     } else {
         redditTimeContainer.style.display = "none"
+    }
+}
+
+function setSelectValue(selectElement, value) {
+    for (const child of selectElement.children) {
+        if (child.value == value) {
+            child.setAttribute("selected", "selected")
+        } else {
+            child.setAttribute("selected", null)
+        }
+    }
+}
+
+function profileChanged(event) {
+    const profileName = event.target.value.trim()
+    if (profileName == "__create") {
+        document.getElementById("profileInput").style.display = "flex"
+    } else {
+        document.getElementById("profileInput").style.display = "none"
+    }
+    if (profileName.indexOf("__") == -1) {
+        const redditProfiles = JSON.parse(localStorage.getItem("redditProfiles"))
+        const profile = redditProfiles.filter(prof => prof.name == profileName)[0]
+        setSelectValue(document.getElementById("redditSort"), profile.sort)
+        changeSort()
+        setSelectValue(document.getElementById("redditTime"), profile.time)
+        profile.subreddits.forEach(addSubredditValue)
+    }
+}
+
+function saveProfile(subreddits, sort, time) {
+    const name = profilePicker.value == "__create" ? profileTextInput.value.trim() : profilePicker.value.trim()
+    if (name != '__none' && name != '') {
+        let profilesString = localStorage.getItem("redditProfiles") || "[]"
+        let profiles = JSON.parse(profilesString).filter(prof => prof.name != name)
+        profiles.push({
+            name,
+            subreddits,
+            sort,
+            time
+        })
+        localStorage.setItem("redditProfiles", JSON.stringify(profiles))
+    }
+}
+
+function fillProfiles() {
+    const redditProfileString = localStorage.getItem("redditProfiles")
+    if (redditProfileString) {
+        const redditProfileNames = JSON.parse(redditProfileString).map(prof => prof.name)
+        for (const profileName of redditProfileNames) {
+            const option = document.createElement("option")
+            option.setAttribute("value", profileName)
+            option.innerText = profileName
+            profilePicker.appendChild(option)
+        }
     }
 }
 
@@ -145,4 +209,9 @@ export function initReddit() {
 
     redditTimeContainer = document.getElementById("redditTimeContainer")
     document.getElementById("redditSort").onchange = changeSort
+
+    profileTextInput = document.getElementById('profileNameInput')
+    profilePicker = document.getElementById('profilePicker')
+    profilePicker.onchange = profileChanged
+    fillProfiles()
 }
