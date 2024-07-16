@@ -4,7 +4,7 @@ A tiny slideshow utilty that can be used for any type of content that you like.
 
 ## Website
 
-[https://goonitupnow.github.io/slideItUpNow/](https://goonitupnow.github.io/slideItUpNow/)
+[https://goonitupnow.github.io/](https://goonitupnow.github.io/)
 
 ## Integrity
 
