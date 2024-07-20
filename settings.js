@@ -21,8 +21,12 @@ let draggingVolume = false;
 let volumeSlider = null;
 let volumeControl = null;
 let volumeControlOpen = true;
+let volumeIsScaled = matchMedia("(orientation: portrait) and (max-width: 1000px)").matches 
 
-function volumeHold() {
+function volumeHold(event) {
+    event.preventDefault()
+    volumeIsScaled = matchMedia("(orientation: portrait) and (max-width: 1000px)").matches 
+    settingsBarHeight = document.getElementById("bar").offsetHeight
     draggingVolume = true;
 }
 
@@ -35,15 +39,19 @@ function volumeRelease() {
 
 function volumeDrag(event) {
     if (draggingVolume) {
-        let y = event.clientY - settingsBarHeight
-        if (y < 16) {
-            y = 16
+        event.preventDefault()
+        let y = (event.clientY || event.touches[0].clientY) - settingsBarHeight - 16
+        if (volumeIsScaled) {
+            y = y/2
         }
-        if (y > (150 - 16)) {
-            y = 150 - 16
+        if (y < 0) {
+            y = 0
         }
-        volumeSlider.setAttribute('cy', y)
-        settings.volume = 1 - (y - 16)/(150 - 32)
+        if (y > (150 - 32)) {
+            y = 150 - 32
+        }
+        volumeSlider.setAttribute('cy', y + 16)
+        settings.volume = 1 - y/(150 - 32)
         for (let e of document.getElementsByClassName("videoSlide")) {
             e.volume = settings.volume
         }
@@ -118,11 +126,12 @@ function applySettings() {
 export function initSettings(onGridChanged) {
     gridChanged = onGridChanged
 
-    settingsBarHeight = document.getElementById("bar").offsetHeight
     volumeSlider = document.getElementById("volumeSlider")
     volumeSlider.onmousedown = volumeHold
+    volumeSlider.ontouchstart = volumeHold
     document.onmouseup = volumeRelease
     document.onmousemove = volumeDrag
+    document.ontouchmove = volumeDrag
     volumeControl = document.getElementById("volumeControl")
     document.getElementById("volume").onclick = toggleVolume
     setVolumeOnSlider()
@@ -151,4 +160,15 @@ export function initSettings(onGridChanged) {
 
     document.getElementById("menu-hover").onmouseenter = () => { document.getElementById("menu").style.display = "block" }
     document.getElementById("menu-hover").onmouseleave = () => { document.getElementById("menu").style.display = "none" }
+    document.getElementById("menu-hover").ontouchstart = (event) => {
+        event.stopPropagation()
+        let menuElem = document.getElementById("menu")
+        menuElem.style.display = "block";
+    }
+    document.ontouchstart = () => {
+        let menuElem = document.getElementById("menu")
+        if (menuElem.style.display == "block") {
+            menuElem.style.display = "none"
+        }
+    }
 }

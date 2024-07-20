@@ -63,6 +63,9 @@ body {
 
 #welcomeArea {
     text-align: center;
+    padding: 0 20px;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 #welcomeArea svg {
@@ -137,6 +140,10 @@ body {
     top: 40px;
     left: 150px;
     transform: rotate(-20deg);
+}
+
+#menu-tip img {
+    width: 100px;
 }
 
 #bar {
@@ -218,22 +225,65 @@ a {
 
 
 @media (orientation: portrait) and (max-width: 1000px) {
-    .browse {
-        font-size: 50px;
+    .browse, #redditSubmit {
+        font-size: 80px;
     }
     #settingsDialog {
         width: 90%;
     }
-    input, button, body {
-        font-size: 30px;
+    input, button, body, select {
+        font-size: 40px;
     }
     
     .settingsRow.sub span:first-of-type {
-        width: 120px;
+        width: 150px;
     }
+
+    .settingsRow input[type="text"], .settingsRow input[type="number"] {
+        width: 250px;
+    }
+
+    .settingsRow input[type="radio"] {
+        width: 30px;
+        height: 30px;
+    }
+
+    img.titleContent {
+        width: 100%;
+    }
+
+    #redditForm {
+        width: 90%;
+    }
+    #menu-hover {
+        width: 600px;
+    }
+    #volumeControl {
+        scale: 2;
+        transform-origin: top right;
+    }
+
+    #menu-tip > div:nth-child(1) {
+        top: 100px;
+        left: 235px;
+    }
+    
+    #menu-tip > div:nth-child(2) {
+        top: 94px;
+        left: 370px;
+    }
+    
+    #menu-tip {
+        font-size: 55px;
+    }
+
+    #menu-tip img {
+        width: 160px;
+    }
+  
 }
 
-@media (orientation: landscape) and (max-height: 1000px) {
+@media (orientation: landscape) and (max-height: 600px) {
 
     #ahegao-left {
         width: 240px;
