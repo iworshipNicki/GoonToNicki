@@ -90,6 +90,8 @@ body {
 #load-container {
     position: relative;
     display: none;
+    width: 80px;
+    margin: 0 auto;
 }
 
 #load-left {

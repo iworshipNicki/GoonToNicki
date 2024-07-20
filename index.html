@@ -2,7 +2,9 @@
 <html>
     <head>
         <script type="module" src="script.js"></script>
+        <script src="tooltip.js"></script>
         <link href="style.css" rel="stylesheet"></style>
+        <link href="tooltip.css" rel="stylesheet"></style>
     </head>
     <body>
         <div id="menu-hover">
@@ -93,6 +95,17 @@
                     </div>
                     <div>
                         <span></span><span id="pickedSubreddits"></span>
+                    </div>
+                    <div>
+                        <div class="tooltip-container">
+                            <label for="roundRobin" class="tooltip-target">Round Robin (?)</label>
+                            <div class="tooltip">
+                                Instead of taking all subreddits and sorting them together,
+                                this option will sort each subreddit individually and then
+                                take one slide from each subreddit at a time.
+                            </div>
+                        </div>
+                        <input type="checkbox" autocomplete="off" id="roundRobin" />
                     </div>
                     <div>
                         <button id="redditSubmit">Show Me Porn!</button>

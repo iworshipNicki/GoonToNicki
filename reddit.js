@@ -1,7 +1,8 @@
 
-let redditFiles = [];
-let after;
-let baseUrl;
+let redditSlideGroups = [];
+let baseUrl = "https://old.reddit.com/r/";
+let urlSuffix;
+let redditSlideGroupIndex = 0;
 
 export async function startReddit() {
     addSubreddit();
@@ -14,79 +15,92 @@ export async function startReddit() {
     }
     const sort = document.getElementById("redditSort").value;
     const time = document.getElementById("redditTime").value
-    baseUrl = "https://old.reddit.com/r/"
-    baseUrl += subreddits.join("+") + "/"
-    baseUrl += sort + "/"
-    baseUrl += ".json"
-    baseUrl += "?t=" + time
-    saveProfile(subreddits, sort, time);
-    await loadNextPage()
+    const roundRobin = document.getElementById("roundRobin").checked
+    urlSuffix = "/" + sort + "/"
+    urlSuffix += ".json"
+    urlSuffix += "?t=" + time
+    saveProfile(subreddits, sort, time, roundRobin);
+    if (roundRobin) {
+        redditSlideGroups = subreddits.map((subreddit) => ({subreddits: subreddit, slides: [], isLoading: false}))
+    } else {
+        redditSlideGroups.push({subreddits: subreddits.join("+"), slides: [], isLoading: false})
+    }
+    await Promise.all(redditSlideGroups.map(obj => loadNextPage(obj)))
     return true
 }
 
-let isLoading = false;
-
-async function loadNextPage() {
-    if (isLoading) {
+async function loadNextPage(slideDefinition) {
+    if (slideDefinition.after === null) {
+        redditSlideGroups.splice(redditSlideGroups.indexOf(slideDefinition), 1)
+        redditSlideGroupIndex = redditSlideGroupIndex % redditSlideGroups.length
         return
     }
-    isLoading = true;
-    let url = baseUrl + (after ? "&after=" + after : "")
-    const response = await fetch(url)
-    const jsonResp = await response.json()
-    let metadataPromises = []
-    after = jsonResp.data.after
-    for (let child of jsonResp.data.children) {
-        if (child.data.stickied) {
-            continue;
-        }
-        if (child.data.gallery_data) {
-            for (let gallery_child of child.data.gallery_data.items) {
-                const mediaId = gallery_child.media_id
-                const media = child.data.media_metadata[mediaId]
-                if (media) {
-                    if (media.m.indexOf("image") === 0) {
-                        let fileEnding = media.m.split("/")[1]
-                        redditFiles.push({type: 'short', url: 'https://i.redd.it/' + media.id + '.' + fileEnding, format: 'image', width: media.s.x, height: media.s.y})
+    if (slideDefinition.isLoading) {
+        return
+    }
+    slideDefinition.isLoading = true;
+    let url = baseUrl + slideDefinition.subreddits + urlSuffix + (slideDefinition.after ? "&after=" + slideDefinition.after : "")
+    try {
+        const response = await fetch(url)
+        const jsonResp = await response.json()
+        let metadataPromises = []
+        slideDefinition.after = jsonResp.data.after
+        for (let child of jsonResp.data.children) {
+            if (child.data.stickied) {
+                continue;
+            }
+            if (child.data.gallery_data) {
+                for (let gallery_child of child.data.gallery_data.items) {
+                    const mediaId = gallery_child.media_id
+                    const media = child.data.media_metadata[mediaId]
+                    if (media) {
+                        if (media.m.indexOf("image") === 0) {
+                            let fileEnding = media.m.split("/")[1]
+                            slideDefinition.slides.push({type: 'short', url: 'https://i.redd.it/' + media.id + '.' + fileEnding, format: 'image', width: media.s.x, height: media.s.y})
+                        }
                     }
                 }
+            } else if (child.data.media_embed && child.data.media_embed.content) {
+                let elem = document.createElement("div")
+                elem.innerHTML = child.data.media_embed.content
+                const decoded = elem.innerText
+                slideDefinition.slides.push({type: 'iframe', html: decoded, height: child.data.media_embed.height, width: child.data.media_embed.width})
+            } else if (child.data.url && /\.(jpg|jpeg|png|gif|bmp|webp|svg|tiff)$/i.test(child.data.url)) {
+                const imgObj = {type: 'short', url: child.data.url, format: 'image'}
+                if (child.data.preview && child.data.preview.images && child.data.preview.images[0].source) {
+                    imgObj.width = child.data.preview.images[0].source.width
+                    imgObj.height = child.data.preview.images[0].source.height
+                } else {
+                    metadataPromises.push(loadImageMetadata(imgObj));
+                }
+                slideDefinition.slides.push(imgObj)
             }
-        } else if (child.data.media_embed && child.data.media_embed.content) {
-            let elem = document.createElement("div")
-            elem.innerHTML = child.data.media_embed.content
-            const decoded = elem.innerText
-            redditFiles.push({type: 'iframe', html: decoded, height: child.data.media_embed.height, width: child.data.media_embed.width})
-        } else if (child.data.url && /\.(jpg|jpeg|png|gif|bmp|webp|svg|tiff)$/i.test(child.data.url)) {
-            const imgObj = {type: 'short', url: child.data.url, format: 'image'}
-            if (child.data.preview && child.data.preview.images && child.data.preview.images[0].source) {
-                imgObj.width = child.data.preview.images[0].source.width
-                imgObj.height = child.data.preview.images[0].source.height
-            } else {
-                metadataPromises.push(loadImageMetadata(imgObj));
-            }
-            redditFiles.push(imgObj)
         }
+        await Promise.all(metadataPromises)
+    } catch (e) {
+        redditSlideGroups.splice(redditSlideGroups.indexOf(slideDefinition), 1)
     }
-    await Promise.all(metadataPromises)
-    isLoading = false
+    slideDefinition.isLoading = false
 }
 
 function loadImageMetadata(imgObj) {
-    let img = new Image();
+    return new Promise((resolve) => {
+        let img = new Image();
 
-    img.onload = async function() {
-        imgObj.width = img.width
-        imgObj.height = img.height
-        resolve()
-    };
-    img.onerror = async function(e) {
-        console.error(e)
-        imgObj.width = 1
-        imgObj.height = 1
-        resolve()
-    }
+        img.onload = async function() {
+            imgObj.width = img.width
+            imgObj.height = img.height
+            resolve()
+        };
+        img.onerror = async function(e) {
+            console.error(e)
+            imgObj.width = 1
+            imgObj.height = 1
+            resolve()
+        }
 
-    img.src = imgObj.url
+        img.src = imgObj.url
+    })
 }
 
 function scaleWidth(fitHeight, height, width) {
@@ -97,30 +111,45 @@ function scaleWidth(fitHeight, height, width) {
 export async function nextRedditSlides(remainingWidth, height, isEmpty) {
     let toAdd = [];
     let newRemainingWidth = remainingWidth;
-    let indicesToRemove = [];
-    for (let i = 0; i < redditFiles.length && i < 10; i++) {
-        let scaledWidth = scaleWidth(height, redditFiles[i].height, redditFiles[i].width)
-        redditFiles[i].scaledWidth = scaledWidth
-        if (scaledWidth < newRemainingWidth) {
-            toAdd.push(redditFiles[i])
-            indicesToRemove.push(i)
-            newRemainingWidth -= scaledWidth
+    while (newRemainingWidth > 50) {
+        while (redditSlideGroups[redditSlideGroupIndex].slides.length === 0) {
+            redditSlideGroups.splice(redditSlideGroupIndex, 1)
+            redditSlideGroupIndex = redditSlideGroupIndex % redditSlideGroups.length
         }
-    }
-    if (isEmpty && toAdd.length === 0) {
-        let scaledHeight = scaleWidth(remainingWidth, redditFiles[0].width, redditFiles[0].height)
-        let scaledWidth = scaleWidth(scaledHeight, redditFiles[0].height, redditFiles[0].width)
-        redditFiles[0].scaledWidth = scaledWidth;
-        toAdd.push(redditFiles[0])
-        indicesToRemove.push(0)
-    }
-    for (const i of indicesToRemove.reverse()) {
-        redditFiles.splice(i, 1)
-    }
-    if (redditFiles.length < 10) {
-        loadNextPage()
+        let slideInfo = getSlideFromGroup(redditSlideGroups[redditSlideGroupIndex], newRemainingWidth, height, isEmpty)
+        if (slideInfo === null) {
+            break;
+        }
+        if (redditSlideGroups[redditSlideGroupIndex].slides.length < 10) {
+            console.log("wohoo", redditSlideGroups[redditSlideGroupIndex])
+            loadNextPage(redditSlideGroups[redditSlideGroupIndex])
+        }
+        redditSlideGroupIndex = (redditSlideGroupIndex + 1) % redditSlideGroups.length
+        toAdd.push(slideInfo.slide)
+        newRemainingWidth = slideInfo.newRemainingWidth
     }
     return toAdd
+}
+
+function getSlideFromGroup(redditSlideGroup, remainingWidth, height, isEmpty) {
+    let newRemainingWidth = remainingWidth;
+    for (let i = 0; i < redditSlideGroup.slides.length && i < 10; i++) {
+        let scaledWidth = scaleWidth(height, redditSlideGroup.slides[i].height, redditSlideGroup.slides[i].width)
+        redditSlideGroup.slides[i].scaledWidth = scaledWidth
+        if (scaledWidth < newRemainingWidth) {
+            let slide = redditSlideGroup.slides.splice(i, 1)[0]
+            newRemainingWidth -= scaledWidth
+            return { slide, newRemainingWidth }
+        }
+    }
+    if (isEmpty) {
+        let scaledHeight = scaleWidth(remainingWidth, redditSlideGroup.slides[0].width, redditSlideGroup.slides[0].height)
+        let scaledWidth = scaleWidth(scaledHeight, redditSlideGroup.slides[0].height, redditSlideGroup.slides[0].width)
+        redditSlideGroup.slides[0].scaledWidth = scaledWidth;
+        let slide = redditSlideGroup.slides.splice(0, 1)[0]
+        return { slide, newRemainingWidth: 0 }
+    }
+    return null
 }
 
 let subredditInput;
@@ -178,10 +207,11 @@ function profileChanged(event) {
         setSelectValue(document.getElementById("redditTime"), profile.time)
         pickedSubreddits.innerHTML = ""
         profile.subreddits.forEach(addSubredditValue)
+        document.getElementById("roundRobin").checked = !!profile.roundRobin
     }
 }
 
-function saveProfile(subreddits, sort, time) {
+function saveProfile(subreddits, sort, time, roundRobin) {
     const name = profilePicker.value == "__create" ? profileTextInput.value.trim() : profilePicker.value.trim()
     if (name != '__none' && name != '') {
         let profilesString = localStorage.getItem("redditProfiles") || "[]"
@@ -190,7 +220,8 @@ function saveProfile(subreddits, sort, time) {
             name,
             subreddits,
             sort,
-            time
+            time,
+            roundRobin
         })
         localStorage.setItem("redditProfiles", JSON.stringify(profiles))
     }
