@@ -64,12 +64,16 @@
                         <label>Profile</label>
                         <select id="profilePicker">
                             <option value="__none" selected>-</option>
-                            <option value="__create">Create new</option>
+                            <option value="__create">Create New</option>
+                            <optgroup label="Presets">
+                            </optgroup>
+                            <optgroup label="Custom">
+                            </optgroup>
                         </select>
                     </div>
                     <div id="profileInput" style="display: none;">
                         <label>Profile name</label>
-                        <input type="text" id="profileNameInput">
+                        <input type="text" id="profileNameInput" autocomplete="off" value="">
                     </div>
                     <div>
                         <label>Sort</label>
@@ -81,7 +85,7 @@
                         </select>
                     </div>
                     <div style="display: none;" id="redditTimeContainer">
-                        <label>Time range</label><select id="redditTime">
+                        <label>Time range</label><select id="redditTime" autocomplete="off">
                             <option value="hour">Past hour</option>
                             <option value="day" selected>Past 24 hours</option>
                             <option value="week">Past week</option>
@@ -91,7 +95,7 @@
                         </select>
                     </div>
                     <div>
-                        <label for="subredditInput">Subreddits</label><span><input type="text" placeholder="subreddit" id="subredditInput" /><button id="subredditAdd">Add</button></span>
+                        <label for="subredditInput">Subreddits</label><span><input type="text" placeholder="subreddit" id="subredditInput" autocomplete="off" /><button id="subredditAdd">Add</button></span>
                     </div>
                     <div>
                         <span></span><span id="pickedSubreddits"></span>

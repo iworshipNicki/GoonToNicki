@@ -1,3 +1,4 @@
+import { redditPresets } from './reddit_presets.js'
 
 let redditSlideGroups = [];
 let baseUrl = "https://old.reddit.com/r/";
@@ -8,7 +9,9 @@ export async function startReddit() {
     addSubreddit();
     let subreddits = [];
     for (const redditElem of document.getElementsByClassName("pickedSubreddit")) {
-        subreddits.push(redditElem.innerText.trim())
+        redditElem.innerText.trim().split("+").forEach((sr) => {
+            subreddits.push(sr.trim())
+        })
     }
     if (subreddits.length == 0) {
         return false;
@@ -21,12 +24,30 @@ export async function startReddit() {
     urlSuffix += "?t=" + time
     saveProfile(subreddits, sort, time, roundRobin);
     if (roundRobin) {
-        redditSlideGroups = subreddits.map((subreddit) => ({subreddits: subreddit, slides: [], isLoading: false}))
+        redditSlideGroups = shuffle(subreddits).map((subreddit) => ({subreddits: subreddit, slides: [], isLoading: false}))
     } else {
-        redditSlideGroups.push({subreddits: subreddits.join("+"), slides: [], isLoading: false})
+        redditSlideGroups.push({subreddits: shuffle(subreddits).join("+"), slides: [], isLoading: false})
     }
     await Promise.all(redditSlideGroups.map(obj => loadNextPage(obj)))
     return true
+}
+
+function shuffle(array) {
+    let currentIndex = array.length,  randomIndex;
+
+    // While there remain elements to shuffle.
+    while (currentIndex > 0) {
+
+        // Pick a remaining element.
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+
+        // And swap it with the current element.
+        [array[currentIndex], array[randomIndex]] = [
+        array[randomIndex], array[currentIndex]];
+    }
+
+    return array;
 }
 
 async function loadNextPage(slideDefinition) {
@@ -193,15 +214,25 @@ function setSelectValue(selectElement, value) {
 }
 
 function profileChanged(event) {
-    const profileName = event.target.value.trim()
+    let profileName = event.target.value.trim()
     if (profileName == "__create") {
         document.getElementById("profileInput").style.display = "flex"
     } else {
         document.getElementById("profileInput").style.display = "none"
     }
     if (profileName.indexOf("__") == -1) {
-        const redditProfiles = JSON.parse(localStorage.getItem("redditProfiles"))
-        const profile = redditProfiles.filter(prof => prof.name == profileName)[0]
+        let profile;
+        if (profileName.indexOf("--preset--") == 0) {
+            profileName = profileName.replace("--preset--", "")
+            profile = redditPresets.filter(prof => prof.name == profileName)[0]
+        } else {
+            const redditProfileString = localStorage.getItem("redditProfiles")
+            if (redditProfileString == null) {
+                return
+            }
+            const customProfiles = JSON.parse(redditProfileString)
+            profile = customProfiles.filter(prof => prof.name == profileName)[0]
+        }
         setSelectValue(document.getElementById("redditSort"), profile.sort)
         changeSort()
         setSelectValue(document.getElementById("redditTime"), profile.time)
@@ -212,8 +243,15 @@ function profileChanged(event) {
 }
 
 function saveProfile(subreddits, sort, time, roundRobin) {
-    const name = profilePicker.value == "__create" ? profileTextInput.value.trim() : profilePicker.value.trim()
+    let name = profilePicker.value == "__create" ? profileTextInput.value.trim() : profilePicker.value.trim()
     if (name != '__none' && name != '') {
+        if (name.indexOf("--preset--") == 0) {
+            name = name.replace("--preset--", "")
+            let preset = redditPresets.find((profile) => profile.name == name)
+            if (preset && preset.subreddits.sort().join() === subreddits.sort().join()) {
+                return
+            }
+        }
         let profilesString = localStorage.getItem("redditProfiles") || "[]"
         let profiles = JSON.parse(profilesString).filter(prof => prof.name != name)
         profiles.push({
@@ -229,13 +267,21 @@ function saveProfile(subreddits, sort, time, roundRobin) {
 
 function fillProfiles() {
     const redditProfileString = localStorage.getItem("redditProfiles")
+    const presetGroup = profilePicker.querySelector('optgroup[label="Presets"]')
+    for (let preset of redditPresets) {
+        const option = document.createElement("option")
+        option.setAttribute("value", "--preset--" + preset.name)
+        option.innerText = preset.name
+        presetGroup.appendChild(option)
+    }
     if (redditProfileString) {
+        const customGroup = profilePicker.querySelector('optgroup[label="Custom"]')
         const redditProfileNames = JSON.parse(redditProfileString).map(prof => prof.name)
         for (const profileName of redditProfileNames) {
             const option = document.createElement("option")
             option.setAttribute("value", profileName)
             option.innerText = profileName
-            profilePicker.appendChild(option)
+            customGroup.appendChild(option)
         }
     }
 }
