@@ -57,6 +57,14 @@ export const redditPresets = [
         isPreset: true,
     },
     {
+        name: "Pussy",
+        subreddits: ["Dildo_pov", "DildoRide", "dildo", "Penetration_gifs", "GodPussy", "PussyFinish", "PussyWallet", "pussy"],
+        sort: "hot",
+        time: "day",
+        roundRobin: true,
+        isPreset: true,
+    },
+    {
         name: "Hentai Bestiality and Monsters",
         subreddits: ["hentaibeast", "monstermen", "GameOverGirls", "insex", "tentai", "consentacles", "allthewaythrough", "tentaclegirls", "slimegirls", "MonsterGirl"],
         sort: "hot",
