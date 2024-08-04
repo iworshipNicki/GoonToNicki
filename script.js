@@ -1,10 +1,11 @@
 import { initSettings, settings } from './settings.js';
-import { showPicker, loadFiles, nextFileSlides, current, total } from './localFiles.js';
+import { showPicker, loadFiles, nextFileSlides, current, total, restartSlides } from './localFiles.js';
 import { startReddit, nextRedditSlides, initReddit } from './reddit.js';
 
 let inProgress = false;
 let animationInterval;
 let slidesFetcher;
+let slidesRestarter;
 let hlsSources = {};
 
 function animateBucket() {
@@ -36,6 +37,7 @@ async function openDir2() {
         await loadFiles(folder)
         inProgress = true
         slidesFetcher = nextFileSlides
+        slidesRestarter = restartSlides
         for (const e of document.getElementsByClassName("slideshow-row")) {
             await startSlideShow(e)
         }
@@ -118,6 +120,10 @@ async function startSlideShow(root) {
         }
         let usedWidth = childrenWidth - removedWidth;
         let slides = await slidesFetcher(root.offsetWidth - usedWidth, root.offsetHeight, usedWidth < 50)
+        if (usedWidth < 50 && slides.length == 0 && slidesRestarter) {
+            slidesRestarter()
+            slides = await slidesFetcher(root.offsetWidth - usedWidth, root.offsetHeight, usedWidth < 50)
+        }
         for (const slide of slides) {
             if (slide.format == 'video') {
                 let vidDiv = document.createElement("video")

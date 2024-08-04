@@ -2,6 +2,7 @@ import { showDirectoryPicker } from 'https://cdn.jsdelivr.net/npm/file-system-ac
 import { settings } from './settings.js';
 
 let allFiles = [];
+let remainingFiles = [];
 export let current = 0;
 export let total = 100;
 
@@ -10,14 +11,21 @@ export async function showPicker() {
 }
 
 export async function loadFiles(folder) {
+    remainingFiles = []
     allFiles = []
     let videoFiles = []
     await loadFolder(folder, videoFiles)
     const {shortVideos, longVideos} = await loadVideoMetadata(videoFiles)
     allFiles = allFiles.concat(shortVideos)
     allFiles = allFiles.concat(longVideos)
-    shuffle(allFiles)
     console.log(allFiles)
+    remainingFiles = [...allFiles]
+    shuffle(remainingFiles)
+}
+
+export async function restartSlides() {
+    remainingFiles = [...allFiles]
+    shuffle(remainingFiles)
 }
 
 export async function nextFileSlides(remainingWidth, height) {
@@ -25,17 +33,17 @@ export async function nextFileSlides(remainingWidth, height) {
     let toAdd = [];
     let newRemainingWidth = remainingWidth;
     let indicesToRemove = [];
-    for (let i = allFiles.length - 1; i >= allFiles.length - 10 && i >= 0; i--) {
-        let scaledWidth = scaleWidth(height, allFiles[i].height, allFiles[i].width)
-        allFiles[i].scaledWidth = scaledWidth
+    for (let i = remainingFiles.length - 1; i >= remainingFiles.length - 10 && i >= 0; i--) {
+        let scaledWidth = scaleWidth(height, remainingFiles[i].height, remainingFiles[i].width)
+        remainingFiles[i].scaledWidth = scaledWidth
         if (scaledWidth < newRemainingWidth) {
-            toAdd.push(allFiles[i])
+            toAdd.push(remainingFiles[i])
             indicesToRemove.push(i)
             newRemainingWidth -= scaledWidth
         }
     }
     for (const i of indicesToRemove) {
-        allFiles.splice(i, 1)
+        remainingFiles.splice(i, 1)
     }
     return toAdd
 }
@@ -98,9 +106,9 @@ async function loadVideoMetadata(videoFiles) {
 async function loadImageMetadata() {
     let img = new Image();
     let imageObjectsToLoad = []
-    for (let i = allFiles.length - 1; i >= allFiles.length - 10 && i >= 0; i--) {
-        if (!allFiles[i].width && allFiles[i].format == 'image') {
-            imageObjectsToLoad.push(allFiles[i])
+    for (let i = remainingFiles.length - 1; i >= remainingFiles.length - 10 && i >= 0; i--) {
+        if (!remainingFiles[i].width && remainingFiles[i].format == 'image') {
+            imageObjectsToLoad.push(remainingFiles[i])
         }
     }
     if (imageObjectsToLoad.length > 0) {
