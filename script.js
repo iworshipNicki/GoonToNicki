@@ -5,6 +5,7 @@ import { startReddit, nextRedditSlides, initReddit } from './reddit.js';
 let inProgress = false;
 let animationInterval;
 let slidesFetcher;
+let hlsSources = {};
 
 function animateBucket() {
     let path = document.getElementById("path")
@@ -65,15 +66,26 @@ function jitter(num) {
     return num + amount
 }
 
+function disposeResources(elem) {
+    if (elem.dataset.isObject) {
+        URL.revokeObjectURL(elem.src)
+    } else if (elem.dataset.hlsSrc) {
+        let hlsObj = hlsSources[elem.dataset.hlsSrc];
+        if (hlsObj) {
+            hlsObj.detachMedia()
+            hlsObj.destroy()
+            delete hlsSources[hlsObj]
+        }
+    }
+}
+
 function replaceSlide(parent, newElem, oldElem, newWidth){
     let oldWidth;
     if (oldElem && Array.prototype.indexOf.call(parent.children, oldElem) >= 0) {
         oldWidth = oldElem.offsetWidth
         newElem.style.width = oldWidth
         parent.replaceChild(newElem, oldElem)
-        if (oldElem.dataset.isObject) {
-            URL.revokeObjectURL(oldElem.src)
-        }
+        disposeResources(oldElem)
     } else {
         oldWidth = 0
         parent.appendChild(newElem)
@@ -115,11 +127,28 @@ async function startSlideShow(root) {
                 if (slide.file) {
                     vidDiv.src = URL.createObjectURL(await slide.file.getFile())
                     vidDiv.setAttribute("data-is-object", "true")
+                    vidDiv.play()
                 } else if (slide.url) {
                     vidDiv.src = slide.url
+                    vidDiv.play()
+                } else if (slide.hls) {
+                    var hls = new Hls();
+                    hlsSources[slide.hls] = hls
+                    vidDiv.setAttribute('width', slide.scaledWidth)
+                    vidDiv.dataset.hlsSrc = slide.hls
+                    hls.loadSource(slide.hls);
+                    hls.attachMedia(vidDiv);
+                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        vidDiv.play();
+                    });
+                    hls.on(Hls.Events.ERROR, () => {
+                        if (timeout) {
+                            clearTimeout(timeout)
+                        }
+                        nextSlide(vidDiv)
+                    })
                 }
                 replaceSlide(root, vidDiv, toRemove.pop(), slide.scaledWidth)
-                vidDiv.play()
                 let timeout; 
                 if (slide.type === 'long') {
                     vidDiv.currentTime = slide.start
@@ -176,7 +205,7 @@ async function startSlideShow(root) {
                 ], 500)
                 animation.onfinish = function() {
                     this.effect.target.parentNode.removeChild(this.effect.target);
-                    URL.revokeObjectURL(this.effect.target.src)
+                    disposeResources(this.effect.target)
                 }
             }
         }
@@ -188,7 +217,6 @@ async function startSlideShow(root) {
             return
         }
         if (elemRemoved) {
-            URL.revokeObjectURL(elemRemoved.src)
             toRemove.push(elemRemoved)
         }
         if (debounceTimer) {
