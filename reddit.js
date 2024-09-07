@@ -82,14 +82,6 @@ async function loadNextPage(slideDefinition) {
                         }
                     }
                 }
-            } else if (child.data.url && child.data.url.indexOf(".redgifs.com") > 0) {
-                let gifId = child.data.url.substring(child.data.url.lastIndexOf("/") + 1)
-                let slide = {type: 'long', hls: "https://api.redgifs.com/v2/gifs/" + gifId + "/hd.m3u8", format: 'video', start: 0}
-                if (child.data.media_embed && child.data.media_embed.width && child.data.media_embed.height) {
-                    slide.width = child.data.media_embed.width
-                    slide.height = child.data.media_embed.height
-                }
-                slideDefinition.slides.push(slide)
             } else if (child.data.media_embed && child.data.media_embed.content) {
                 let elem = document.createElement("div")
                 elem.innerHTML = child.data.media_embed.content
