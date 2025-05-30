@@ -99,6 +99,17 @@ async function loadVideoMetadata(videoFiles) {
             }
         }
 
+        video.onerror = async function(e) {
+            console.error("Failed to load video, skipping", e);
+            videoFiles.pop();
+            if (videoFiles.length > 0) {
+                video.src = URL.createObjectURL(await videoFiles[videoFiles.length - 1].getFile())
+                current++;
+            } else {
+                resolve({shortVideos, longVideos})
+            }
+        }
+
         video.src = URL.createObjectURL(await videoFiles[videoFiles.length - 1].getFile());
     })
 }
