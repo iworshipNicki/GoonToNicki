@@ -15,39 +15,12 @@
     z-index: 999;
 }
 
-#caption-left,
-#caption-middle {
+#caption-left {
     position: absolute;
     top: 0;
     height: 475px;
     width: auto;
 }
-
-/* Center the middle image */
-#caption-middle {
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-/* Responsive mobile fix */
-@media (max-width: 768px) {
-    #top-captions {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        height: auto;
-        gap: 10px;
-        padding: 10px 0;
-        position: static; /* disable absolute positioning */
-    }
-
-    #caption-left,
-    #caption-middle {
-        position: static;
-        height: auto;
-        width: 90vw;
-        max-width: 400px;
-    }
 }
 </style>
 
