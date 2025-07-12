@@ -7,17 +7,34 @@
         <link href="style.css" rel="stylesheet"></style>
         <link href="tooltip.css" rel="stylesheet"></style>
         <style>
+<style>
 #top-captions {
     position: relative;
     width: 100%;
-    height: 150px; /* Adjust based on your image height */
+    height: 600px; /* set container height based on image height */
     z-index: 999;
 }
 
-#caption-left, #caption-middle {
-    max-height: 150px;
-    height: auto;
+/* Top left image */
+#caption-left {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 600px; /* or use width: 25vw for more flexibility */
+    width: auto;
 }
+
+/* Top center image */
+#caption-middle {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 600px;
+    width: auto;
+}
+</style>
+
 </style>
     </head>
     <body>
