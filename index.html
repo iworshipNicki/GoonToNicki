@@ -6,8 +6,25 @@
         <script src="tooltip.js"></script>
         <link href="style.css" rel="stylesheet"></style>
         <link href="tooltip.css" rel="stylesheet"></style>
+        <style>
+#top-captions {
+    position: relative;
+    width: 100%;
+    height: 150px; /* Adjust based on your image height */
+    z-index: 999;
+}
+
+#caption-left, #caption-middle {
+    max-height: 150px;
+    height: auto;
+}
+</style>
     </head>
     <body>
+        <div id="top-captions">
+            <img id="caption-left" src="resources/CaptionTopLeft.jpg" alt="Top Left">
+            <img id="caption-middle" src="resources/CaptionTopMiddle.jpg" alt="Top Middle">
+        </div>
         <div id="menu-hover">
             <div id="menu" style="display: none;">
                 <div id="bar">
@@ -57,8 +74,8 @@
                     </svg>
                 </div>
                 <img class="titleContent" src="resources/goontonicki.png"/>
-                <p class="titleContent noForm">Tiled slideshow for your local files.</p>
-                <p class="titleContent noForm">No files are uploaded. The slideshow is run on your computer.</p>
+                <p class="titleContent noForm">Tiled slideshow for local files.</p>
+                <p class="titleContent noForm">No files are uploaded. The slideshow is run directly from your computer.</p>
                 <button class="titleContent browse noForm" id="browse">Pick folder</button> <button class="titleContent browse noForm" id="browseReddit" style="display: none;">From reddit</button>
                 <div id="redditForm" style="display: none;">
                     <div>
