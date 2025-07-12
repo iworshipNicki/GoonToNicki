@@ -11,27 +11,43 @@
 #top-captions {
     position: relative;
     width: 100%;
-    height: 475px; /* set container height based on image height */
+    height: 475px;
     z-index: 999;
 }
 
-/* Top left image */
-#caption-left {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 475px; /* or use width: 25vw for more flexibility */
-    width: auto;
-}
-
-/* Top center image */
+#caption-left,
 #caption-middle {
     position: absolute;
     top: 0;
-    left: 50%;
-    transform: translateX(-50%);
     height: 475px;
     width: auto;
+}
+
+/* Center the middle image */
+#caption-middle {
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Responsive mobile fix */
+@media (max-width: 768px) {
+    #top-captions {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: auto;
+        gap: 10px;
+        padding: 10px 0;
+        position: static; /* disable absolute positioning */
+    }
+
+    #caption-left,
+    #caption-middle {
+        position: static;
+        height: auto;
+        width: 90vw;
+        max-width: 400px;
+    }
 }
 </style>
 
